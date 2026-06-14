@@ -90,3 +90,15 @@ Skills use three loading levels:
 ### What NOT to Include
 
 Do not create extraneous files: README.md, INSTALLATION_GUIDE.md, CHANGELOG.md, etc. The skill should only contain what an AI agent needs to do the job.
+
+## 异常与边界条件
+
+| 场景 | 触发条件 | 一线修复 | 兜底 |
+|------|----------|----------|------|
+| 需求太模糊 | 用户只说"帮我造个skill"无具体领域 | 反问目标领域、使用者、输入输出 | 用通用模板创建框架skill |
+| 技能重名 | 创建的skill名已存在 | 加后缀（_v2）或建议备选名 | 标注冲突，让用户重选 |
+| 超出执行能力 | 用户需要外部API/工具集成 | 能做的部分先做，标注需要用户配合的部分 | 建议拆分为多个skill分步实现 |
+| 资源文件冲突 | 引用已存在的脚本/模板 | 复用现有文件，不新建 | 加编号区分（scripts/v2/） |
+| 用户不满意结果 | 创建后用户说"不对" | 追问具体缺什么，迭代改进 | 退回理解阶段重新收集需求 |
+
+**🔴 CHECKPOINT** — 每步完成时确认用户是否满意。创建完毕必须测试，跳过测试会产出伪劣skill。如果需求反复变化，退回第一步重新理解。
