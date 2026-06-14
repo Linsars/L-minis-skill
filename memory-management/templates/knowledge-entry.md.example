@@ -1,0 +1,15 @@
+# {Topic Title}
+
+## Principle
+- [P1][YYYY-MM-DD][src:system] One-line distilled principle (≤80 chars)
+
+## Context
+Why this matters. When you would encounter this. 2-3 sentences max.
+
+## Details
+- Specific technical insight or configuration
+- What NOT to do (the mistake this knowledge prevents)
+
+## Source Projects
+- First encountered in: {project} on {date}
+- Also seen in: {project} on {date}

@@ -1,0 +1,5 @@
+timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
+2026-06-14T16:52:52\tcd9975128e9a79435151d45ed76cd0c272580e41\timpeccable\t-\t50.9\tbaseline\t全局\t初始基线评估\tdry_run
+2026-06-14T16:55:19\td30b412\timpeccable\t50.9\t67.6\tkeep\t处理失败模式+边界条件+反例黑名单\t新增 5 行 if-then 表 + 5 条反例 + 🔴 CHECKPOINT\tdry_run
+2026-06-14T16:57:07\tabcb712\timpeccable\t67.6\t73.5\tkeep\t处理工作流清晰度\t添加编号执行流程 5 步 + 🔴 上下文检查点\tdry_run
+2026-06-14T16:58:40\t9d76f71\timpeccable\t73.5\t75.2\tkeep\t处理可执行具体性\t加输出规范(设计方向/代码/AA配色)\tdry_run

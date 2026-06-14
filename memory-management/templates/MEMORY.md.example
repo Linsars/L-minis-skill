@@ -1,0 +1,23 @@
+# Long-term Memory
+
+## Core Identity
+- [P0] User language preference and communication style
+- [P0] Safety red lines (e.g., no unsolicited external messages)
+- [P0] Code style conventions per language
+- [P0] Response style (e.g., conclusions first, then details)
+- [P0] Work mode (e.g., 1+1+N model)
+
+## Active Projects
+<!-- One-liner + pointer only. Details in memory/projects/*.md -->
+- [P1][YYYY-MM-DD] ProjectA: current status summary, see memory/projects/project-a.md
+- [P1][YYYY-MM-DD] ProjectB: current status summary, see memory/projects/project-b.md
+
+## Preferences
+<!-- Cross-project preferences only. Project-specific prefs go in project files -->
+- [P1][YYYY-MM-DD][src:user] Response length preference
+- [P1][YYYY-MM-DD][src:user] Code explanation style preference
+
+## Memory Index
+- Project context: memory/projects/*.md
+- Cross-project knowledge: memory/knowledge/*.md
+- Decision archive: memory/archive/*.md

@@ -1,0 +1,59 @@
+# Default: auto-detect text files, normalize to LF in repo
+* text=auto eol=lf
+
+# Force LF for key text files (no CRLF allowed)
+*.md            text eol=lf
+*.markdown      text eol=lf
+*.txt           text eol=lf
+*.json          text eol=lf
+*.jsonc         text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.toml          text eol=lf
+*.html          text eol=lf
+*.htm           text eol=lf
+*.css           text eol=lf
+*.scss          text eol=lf
+*.js            text eol=lf
+*.mjs           text eol=lf
+*.cjs           text eol=lf
+*.ts            text eol=lf
+*.tsx           text eol=lf
+*.jsx           text eol=lf
+*.py            text eol=lf
+*.sh            text eol=lf
+*.bash          text eol=lf
+*.zsh           text eol=lf
+
+# Dotfiles / config
+.gitignore      text eol=lf
+.gitattributes  text eol=lf
+.editorconfig   text eol=lf
+.env.example    text eol=lf
+
+# Windows-specific files keep CRLF
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+*.ps1           text eol=crlf
+
+# Binary files — never touch
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.webp          binary
+*.svg           text eol=lf
+*.pdf           binary
+*.docx          binary
+*.xlsx          binary
+*.pptx          binary
+*.zip           binary
+*.gz            binary
+*.tar           binary
+*.mp3           binary
+*.mp4           binary
+*.woff          binary
+*.woff2         binary
+*.ttf           binary
+*.eot           binary
