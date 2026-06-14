@@ -1,3 +1,14 @@
-# 本地 git 产物 - 不推
+# 临时文件
+*.backup
+*.tmp
+*.temp
+*jpNGBD
+
+# 嵌套 git
 .git/
+.gitattributes
+
+# 系统文件
+.DS_Store
+Thumbs.db
 skills_translated_backup
