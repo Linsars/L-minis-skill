@@ -232,5 +232,26 @@ A binary is "restricted" (immune to DYLD injection) when any of:
 - When writing x86_64 shellcode, remember macOS uses `0x2000000 + syscall_number` for BSD syscalls
 - ARM64 shellcode uses raw syscall numbers in X16 with `svc` instruction
 - Apple Silicon enforces W^X in hardware - use `MAP_JIT` for shellcode execution
-- Apple's private frameworks are undocumented but can be reverse-engineered via Hopper/class-dump
+
+## 异常与边界条件
+
+| 场景 | 触发条件 | 一线修复 | 兜底 |
+|------|----------|----------|------|
+| 目标 macOS 版本不明 | 用户只说"审计app"未指定版本 | 先跑 `sw_vers` 确认版本 | 按最新版默认执行 |
+| SIP/AMFI 状态未知 | 工具报错权限不足 | 提示 `csrutil status` + boot-args | 降级到无 SIP 要求的子方案 |
+| App 已签名/加壳 | Binary 分析失败 | `file` + `otool -L` 探测类型 | 列出可用脱壳方案 |
+| 参考文档不可达 | CVE/技术链接 404 | 本地搜索替代资料 | 跳过不影响其他步骤 |
+
+**🔴 CHECKPOINT** — 执行渗透测试前先确认授权。非授权测试一律拒绝。
+
+## 反例与黑名单
+
+- **不要实测未公开漏洞** — 所有 CVE 练习必须在隔离 VM 内
+- **不要假设每台 Mac 都相同** — 版本、芯片、SIP 直接影响技术选型
+- **不要跳过审计直接跑利用** — 先探测环境再选择方案
+- **不要输出可直接运行的攻击脚本** — 敏感参数用占位符
+
+## Important Notes
+
+- All techniques are for authorized security testing, CTF challenges, and educational purposes only
 - Launch constraints (Ventura+) add a new layer of binary execution restrictions beyond code signing
