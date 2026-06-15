@@ -38,15 +38,20 @@ kill-2 激活后第一动作：
 
 | 输入类型 | 路由到 | 示例 |
 |----------|--------|------|
-| iOS/Android 移动应用安全 | WF1 + M1/M5 | 「分析这个App的加密」 |
+| iOS/Android 移动应用安全 | WF1 + M1/M5 + `ios-reverse-engineering` | 「分析这个App的加密」 — 本地Pyth on快速分析或GH Actions深度分析 |
 | 社会工程/钓鱼 | WF2 + H1/H7 | 「怎么让他点链接」 |
 | Exploit/二进制漏洞 | WF3 + M1/M6 | 「这个crash能利用吗」 |
 | 完整攻击规划 | WF4 + 所有模型 | 「渗透这个公司」 |
 | CTF 解题 | WF3 + 工具链 | 「Pwn this binary」 |
 | 代码审查/工具开发 | 代码风格指南 | 「Frida脚本怎么写」 |
 | OPSEC 咨询 | OPSEC基线 | 「怎么隐蔽通信」 |
-| macOS/XNU 安全 | ➡️ 路由到 macos-control-bypasses 技能 | 「Mac shellcode」「macOS 提权」「SIP bypass」 |
-| 商业/非安全分析 | ❌ kill-2框架不适用 | 输出: "这个场景不在kill-2的攻击框架范围内。" |
+| Web 应用攻击 (XSS/SQLi/SSRF/SSTI/CMDi/XXE/反序列化) | ➡️ 路由对应技能: `xss-cross-site-scripting` / `sqli-sql-injection` / `ssrf-server-side-request-forgery` ... | 「这个登录框能SQL注入吗」「XSS绕过CSP」 |
+| API/认证安全 (BOLA/JWT/OAuth) | ➡️ 路由到 `api-authorization-and-bola` / `jwt-oauth-token-attacks` | 「API鉴权有洞吗」「JWT伪造」 |
+| Active Directory 攻击 (ACL/ADCS/Kerberos) | ➡️ 路由到 `active-directory-acl-abuse` / `active-directory-certificate-services` / `active-directory-kerberos-attacks` | 「域渗透」「AD提权」 |
+| 网络协议/隧道 (ARP/DNS欺骗/内网穿透) | ➡️ 路由到 `network-protocol-attacks` / `tunneling-and-pivoting` | 「内网穿透」「DNS隧道」 |
+| Android 安全测试 | ➡️ 路由到 `android-pentesting-tricks` | 「Android 抓包」「SSL pinning绕过」 |
+| macOS/XNU 安全 | ➡️ 路由到 `macos-control-bypasses` | 「Mac shellcode」「macOS 提权」「SIP bypass」 |
+| 商业/非安全分析 | ❌ kill-2 不适用 | 输出: "这个场景不在 kill-2 覆盖范围内。" |
 
 **🔴 CHECKPOINT** — 如果用户输入不在上述 9 类中，输出："输入不在 kill-2 覆盖范围内。请提供安全/攻击相关上下文，或重新描述问题。" 不要强行匹配。
 

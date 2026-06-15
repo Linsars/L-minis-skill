@@ -1,0 +1,76 @@
+name: iOS Recon — Deep Binary Analysis
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: 'IPA download URL'
+        required: true
+      report_level:
+        description: 'Analysis depth'
+        type: choice
+        options: [quick, full]
+        default: quick
+
+jobs:
+  analyze:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          brew install blacktop/tap/ipsw 2>/dev/null || true
+          pip3 install plistlib
+
+      - name: Download IPA
+        run: |
+          curl -L -o app.ipa "${{ inputs.ipa_url }}"
+          echo "IPA size: $(ls -lh app.ipa | awk '{print $5}')"
+
+      - name: Extract & Quick Analysis
+        run: |
+          mkdir -p output
+          # Extract
+          unzip -q app.ipa -d extracted/
+          APP_DIR=$(find extracted -name "*.app" -type d | head -1)
+          echo "App: $APP_DIR"
+
+          # Info.plist
+          plutil -convert json "$APP_DIR/Info.plist" -o output/infoplist.json 2>/dev/null || true
+
+          # Strings
+          find extracted -name "*.dylib" -o -name "*.framework" | while read f; do
+            strings "$f" >> output/strings_raw.txt 2>/dev/null || true
+          done
+          find extracted -name "*.app" -type d | while read f; do
+            strings "$f/$(basename $f .app)" >> output/strings_macho.txt 2>/dev/null || true
+          done
+
+          # URLs & endpoints
+          grep -Eo 'https?://[^"'"'"' \t<>]{5,200}' output/strings_*.txt 2>/dev/null | sort -u > output/urls.txt
+          grep -Eo '/(api|v[0-9]+|rest|graphql)[/\w\-\.]{2,100}' output/strings_*.txt 2>/dev/null | sort -u > output/endpoints.txt
+
+      - name: Full Analysis (if selected)
+        if: inputs.report_level == 'full'
+        run: |
+          # class-dump
+          APP_DIR=$(find extracted -name "*.app" -type d | head -1)
+          BINARY="$APP_DIR/$(basename $APP_DIR .app)"
+          class-dump -H "$BINARY" -o output/headers/ 2>/dev/null || true
+
+          # otool
+          otool -L "$BINARY" > output/deps.txt 2>/dev/null || true
+          otool -l "$BINARY" > output/load_commands.txt 2>/dev/null || true
+
+          # Codesign
+          codesign -d --entitlements - "$BINARY" > output/entitlements.plist 2>/dev/null || true
+
+          # ipsw (if available)
+          which ipsw && ipsw macho info "$BINARY" > output/macho_info.json 2>/dev/null || true
+
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-analysis-report
+          path: output/
