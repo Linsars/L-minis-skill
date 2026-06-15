@@ -1,0 +1,5 @@
+[
+  {"id": 1, "prompt": "刚拿到一个银行App的IPA，帮我分析逆向工程应该从哪里入手", "expected": "使用WF1流程，包含静态分析检查点、保护机制评估、工具推荐"},
+  {"id": 2, "prompt": "目标公司有严格的安全团队和EDR，怎么规划渗透路径", "expected": "使用WF4流程，H1/H2优先考虑社工和供应链路径，配合OPSEC措施"},
+  {"id": 3, "prompt": "写一个Frida脚本hook iOS App的登录函数，提取用户名密码", "expected": "参考code-style的Frida模板，强调隐蔽和批量收集模式"}
+]
