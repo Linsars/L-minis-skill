@@ -33,7 +33,9 @@ IPA 解包 → 64位内存补丁 → C2 心跳 → 清理痕迹。每一步都�
 | CF WAF 绕过 | references/cf-waf-bypass.md | 「CF 盾绕过」 |
 | 非安全/商业分析 | ❌ 不适用 | 「不在此框架范围」 |
 
-**🔴 跨技能冲突**：shellcode/exploit/bypass/逆向 与 macos-control-bypasses 重叠。检测到 macOS/Mac/XNU/Apple Silicon 上下文 → 优先路由给 macos-control-bypasses。
+**🔴 跨技能冲突**：shellcode/exploit/bypass/逆向 与 macos-control-bypasses 重叠。按意图区分：
+- macOS 是 **攻击目标**（提权、内核漏洞、TCC/SIP 绕过、macOS App 逆向）→ 路由给 `macos-control-bypasses`
+- macOS 是 **开发/分析环境**（iOS 逆向中使用 otool/class-dump/codesign、GH Actions macOS runner、Theos 编译）→ 留在 kill-2 继续 iOS 分析
 
 ---
 
