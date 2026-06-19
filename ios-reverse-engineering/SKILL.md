@@ -29,7 +29,7 @@ IPA 获取
 
 ## 二、本地 Python 分析工具
 
-见 `scripts/ios-quick-scan.py` — 独立可用，无外部依赖。功能：
+见 `scripts/ios-quick-scan.py` — 独立可用，无外部依赖，属于 `local` 模式。功能：
 - IPA 解压 & 结构分析
 - Info.plist 提取
 - URL scheme / Universal Link 发现
@@ -42,17 +42,25 @@ IPA 获取
 
 ## 三、GitHub Actions 深度分析
 
-当需要 class-dump / otool / Ghidra 分析时：
+当需要 class-dump / otool / Ghidra 分析时，切 `github-macos`：
 
 ```
 minis 内操作:
-1. 上传 IPA 到 /var/minis/attachments/
+1. 上传 IPA 到可公网访问的位置，或由 workflow 自己 curl 拉取
 2. 触发 GH Actions workflow:
-   gh workflow run ios-recon.yml -f ipa_path=<path> -f report_level=full
-3. 等待结果，下载报告到 /var/minis/workspace/
+   gh workflow run ios-recon-gha.yml -f ipa_url=<https-url> -f artifact_name=ios-recon
+3. 等待结果，下载 artifact 到 /var/minis/workspace/
 ```
 
-workflow 模板见 `workflows/ios-recon.yml`
+workflow 模板见 `workflows/ios-recon-gha.yml`
+
+## 四、device-only 步骤
+
+以下步骤需要真实设备/真实进程，不在 OpenMinis 本地直接运行：
+- `frida -U/-H` 动态附加与类枚举
+- `lldb` / `debugserver` 真机附加
+- TrollStore / TrollFools 注入与 entitlements 行为验证
+- Surge MITM 真流量解密/重写
 
 ## 四、参考来源
 

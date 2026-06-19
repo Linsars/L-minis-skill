@@ -183,41 +183,58 @@ strings binary | grep -iE 'password|secret|key|token|http://|https://'
 
 ---
 
+## 执行分流
+
+kill-2 的执行层按环境分三类，避免在 OpenMinis 本地误走跑不通的工具链：
+
+| 模式 | 适用内容 | 典型工具 |
+|------|----------|----------|
+| `local` | 轻量预处理、解包、字符串/符号初筛、脚本生成 | `python3` `unzip` `zip` `nm` `objdump` `git` `node` |
+| `github-macos` | Mach-O 深度静态分析、Theos 构建、签名链检查、Ghidra/Java 分析 | `otool` `plutil` `lipo` `codesign` `class-dump` `ldid` `theos` `java` |
+| `device-only` | 真机附加、Frida 动态枚举、LLDB/debugserver、TrollStore/TrollFools 注入、Surge 实流量验证 | `frida` `lldb` `debugserver` `TrollStore` `TrollFools` `Surge` |
+
+默认策略：**能在 `local` 完成的先本地做；需要 Apple 工具链就切 `github-macos`；需要真实进程/设备行为就标记 `device-only`。**
+
 ## 核心工作流
 
 所有工作流统一结构：**输入 → 输出 → 可执行命令 → 🔴 检查点 → 失败模式表**
 
 ### WF1: iOS 逆向工程
 
+`mode`: `local` → `github-macos` → `device-only`
+
 ```
 输入: IPA 路径 / 设备 IP
 输出: 分析报告 + Hook 脚本 + 可选重签 IPA
 
-# 1. 解包 + 基础侦察
+# 1. local: 解包 + 基础侦察
 unzip app.ipa -d payload/
-otool -L payload/Payload/*.app/* | grep -v 'usr/lib'
-jtool2 --analyze payload/Payload/*.app/*
-
-# 2. class-dump + 符号枚举
-class-dump -H payload/Payload/*.app/* -o headers/
-# 关注: ViewController, Session, Crypto, Auth, Manager 结尾类
+python3 /var/minis/skills/ios-reverse-engineering/scripts/ios-quick-scan.py payload/
 nm -u payload/Payload/*.app/* | grep -v '___stub'
+objdump -x payload/Payload/*.app/* | head -80
 
-# 3. Frida runtime 枚举
+# 2. github-macos: class-dump + Mach-O 深分析
+otool -L payload/Payload/*.app/* | grep -v 'usr/lib'
+class-dump -H payload/Payload/*.app/* -o headers/
+plutil -p payload/Payload/*.app/Info.plist
+# 深度静态分析工作流: ios-reverse-engineering/workflows/ios-recon-gha.yml
+
+# 3. device-only: Frida runtime 枚举 + 保护绕过
 frida -U -n target -l scripts/enum-classes.js
 # ObjC: ObjC.enumerateLoadedClasses()
 # Swift: ModuleName.ClassName 注意 Swift 4+ mangling
+lldb / debugserver / TrollStore / Surge 仅在真机侧执行
 
-# 4. 保护机制检测
-/usr/libexec/security_checker -i payload/Payload/*.app
-strings payload/Payload/*.app/* | grep -iE 'isJailbroken|amIDebugged|ptrace|sysctl'
-
-# 5. 深度分析 → references/ios-deep-dive.md
+# 4. 参考知识库
+# 读取 kill-2/references/ios-deep-dive.py
 ```
 
-**🔴 CHECKPOINT**：加密且无脱壳方案 → 切 WF3 或放弃；越狱检测 ≥5 种 → 需要统一 Frida Hook 策略；无过度授权 entitlements → 考虑社工路线。
+**🔴 CHECKPOINT**：
+- `local` 已拿到可疑类名/符号/URL scheme → 进入 `github-macos` 做静态深挖
+- 需要 class runtime / 反调试验证 / 真流量 → 标记 `device-only`
+- 加密且无脱壳方案 → 切 WF3 或放弃；越狱检测 ≥5 种 → 需要统一 Frida Hook 策略；无过度授权 entitlements → 考虑社工路线
 
-**失败模式**：Mach-O 无法解析（自定义加密）→ 改用进程内存 dump → 仍失败则标注「加密无法绕过」。Frida 无法 attach（反调试）→ 尝试 lldb debugserver 远控 → 仍失败则切 Surge MITM 网络层分析。
+**失败模式**：`local` 无法解析有效符号 → 切 `github-macos` 跑完整 Mach-O 流程。`github-macos` 也无结果 → 标注“静态价值低”，转 `device-only` 动态分析。Frida 无法 attach（反调试）→ 尝试 lldb debugserver → 仍失败则切 Surge MITM 网络层分析。
 
 ---
 
@@ -272,33 +289,41 @@ Persistence → Privesc → Lateral → Exfil → Covering Tracks
 
 ### WF5: iOS Tweak 开发与巨魔部署
 
+`mode`: `github-macos` → `device-only`
+
 ```
 输入: 目标 IPA / bundle ID + 需求
 输出: .deb + .dylib + 可选 .sgmodule
 
-# 1. Theos 初始化
+# 1. github-macos: Theos 初始化
 export THEOS=/opt/theos
 nic.pl → 选 iphone/tweak → 配置 bundle filter（com.target.app）
 
-# 2. Logos hook 编写（模板见 scripts/logos-hook-template.xm）
+# 2. github-macos: Logos hook 编写（模板见 scripts/logos-hook-template.xm）
 # 填入类名和 selector，优先底层 C 函数（MSHookFunction > %hook）
 
-# 3. 编译 + 签名
+# 3. github-macos: 编译 + 签名
 make package ROOTLESS=1
 ldid -Sentitlements.plist .theos/obj/debug/*.dylib
 
-# 4. TrollStore 注入
+# 4. device-only: TrollStore / TrollFools 注入
 # 提取 .deb → .dylib → TrollFools 注入目标 IPA
 # 或手动注入: optool install -c load -p @executable_path/hook.dylib target_binary
 
-# 5. Surge MITM 验证
+# 5. device-only: Surge MITM 验证
 # 编写 .sgmodule 配置目标 hostname
 # 验证 hook 后流量是否正常解密（模板见 scripts/surge-mitm-template.js）
 ```
 
-**🛑 CHECKPOINT**：.dylib 依赖 jailbreak-only API（CydiaSubstrate）→ ❌ 不可 TrollStore 环境运行。entitlements 包含无需的敏感权限 → ❌ 缩小权限集防止检测。hook 方法名写死 → ⚠️ 每次更新后 class-dump 确认签名。Surge MITM 未覆盖全 API endpoint → ⚠️ 补 hostname。
+**🛑 CHECKPOINT**：
+- OpenMinis 本地不具备 `theos` / `ldid` / `class-dump` / `codesign` → 直接切 `github-macos`
+- 需要 TrollStore / TrollFools / Surge 真流量验证 → 标记 `device-only`
+- .dylib 依赖 jailbreak-only API（CydiaSubstrate）→ ❌ 不可 TrollStore 环境运行
+- entitlements 包含无需的敏感权限 → ❌ 缩小权限集防止检测
+- hook 方法名写死 → ⚠️ 每次更新后 class-dump 确认签名
+- Surge MITM 未覆盖全 API endpoint → ⚠️ 补 hostname
 
-**失败模式**：TrollStore 不支持目标设备 → 切 Dopamine 越狱环境。编译报错（缺少框架头文件）→ 从 IPA 的 Frameworks/ 提取私有 .h → 重试。Tweaks 冲突（其他项目同名 %hook）→ 加 %group 条件编译隔离。
+**失败模式**：GitHub 构建失败（缺头文件/私有 framework）→ 从 IPA 的 `Frameworks/` 提取头与二进制补齐再重试。TrollStore 不支持目标设备 → 切 Dopamine 越狱环境。Tweaks 冲突（其他项目同名 `%hook`）→ 加 `%group` 条件编译隔离。
 
 ---
 
