@@ -119,3 +119,7 @@
 3. iOS 14+ 二进制类指针带 chained-fixup 编码（高位链标记）：`& 0x3FFFFFFFFFFF` 掩码还原
 4. 小方法列表（entsize|0x80000000）：12 字节条目 `{i32 sel;i32 typ;i32 imp}` 每字段相对自身地址；sel 是经 `__objc_selrefs` 槽的间接引用，槽内容才是 fixup 编码的字符串指针
 5. struct 格式串 `'<Q'*3` = `'<Q<Q<Q'` 非法——前缀只能出现一次
+
+**objc_meta_scan 完全体（class-dump 等价）**：`python3 scripts/objc_meta_scan.py <bin> -o out.h`
+输出可编译风格头文件（@interface/@protocol/category/@property），支持 fat/chained-fixup/相对方法表/selref 间接/元类类方法。
+`--text` 回调试文本模式。已知残留：外部类的 category host 显示 ?、混淆 super 会出乱码名——与经典 class-dump 同级瑕疵。
