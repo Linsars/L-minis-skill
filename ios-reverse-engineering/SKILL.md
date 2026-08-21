@@ -54,6 +54,26 @@ minis 内操作:
 
 workflow 模板见 `workflows/ios-recon-gha.yml`
 
+## 失败模式与检查点
+
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| quick-scan.py 报错或输出为空 | 检查 IPA 是否 FairPlay 加密壳——加密包只能解析 plist/明文字符串 | 标记需脱壳，转已脱壳来源或 device-only |
+| `gh workflow run` 404 | 确认 workflow 在默认分支且 Actions 已启用 | 本地跑 `scripts/ios-recon.sh` 的可执行部分 |
+| artifact 下载为空 | `gh run view --log` 读完整日志定位（禁止只看单条错误） | 降级 `otool -oV` + `strings` 出报告 |
+| class-dump 输出空/乱码 | Swift-only binary 不被 class-dump 支持 | 转 Ghidra 反编译或 frida 运行时枚举 |
+
+**🔴 检查点**：
+- 上传 IPA 到公网 URL 前 → 🛑 STOP：确认非客户敏感资产且有测试授权
+- 检测到加密壳 → 不要继续堆静态分析，先解决脱壳来源
+
+## 反模式（绝不做）
+
+- 不对 App Store 加密 IPA 直接跑 class-dump（必然空输出，先确认脱壳状态）
+- 不在 iSH 本地装 Ghidra/Java 重活（深度分析走 github-macos 分流）
+- 不跳过 quick-scan 直接上 GH Actions（local 能做的先做，省 runner 时长）
+- 不把 device-only 步骤写进 CI workflow（runner 上没有真机，frida -U 必败）
+
 ## 四、device-only 步骤
 
 以下步骤需要真实设备/真实进程，不在 OpenMinis 本地直接运行：
@@ -62,11 +82,11 @@ workflow 模板见 `workflows/ios-recon-gha.yml`
 - TrollStore / TrollFools 注入与 entitlements 行为验证
 - Surge MITM 真流量解密/重写
 
-## 四、参考来源
+## 五、参考来源
 
 基础脚本源自 [incogbyte/iOS-reverse-engineering-claude-skill](https://github.com/incogbyte/iOS-reverse-engineering-claude-skill) — 包含 9 个 Shell 脚本 + 5 个 Ghidra Java 脚本。本地 Python 版是原版逻辑的移植适配。
 
-## 五、触发条件
+## 六、触发条件
 
 - "分析这个 IPA / App"
 - "这个 App 有后门吗"
