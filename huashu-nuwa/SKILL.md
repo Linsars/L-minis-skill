@@ -253,10 +253,10 @@ spawn subagent时，用以下结构给任务（以Agent 1著作为例）：
 
 #### 工具辅助（如可用）
 - 书籍：Z-Library/LibGen搜索下载 → 存入 `sources/books/`
-- 视频字幕获取（已提供脚本，直接调用）：
-  - **Step 1 下载字幕**：`bash [skill目录]/scripts/download_subtitles.sh <YouTube_URL> [输出目录]`
-    - 自动优先人工字幕 → 中文 → 英文 → 自动生成字幕
-    - 输出SRT/VTT文件到指定目录
+- 视频字幕获取（yt-dlp 内联命令，无脚本依赖）：
+  - **Step 1 下载字幕**：`yt-dlp --write-sub --write-auto-sub --sub-lang zh,en --skip-download -o "<输出目录>/%(title)s" <YouTube_URL>`
+    - 自动优先人工字幕 → 中文 → 英文 → 自动生成字幕，输出 SRT/VTT
+    - yt-dlp 未安装时 `pip install yt-dlp`（纯 Python，iSH 可装）
   - **Step 2 清洗为纯文本**：`python3 [skill目录]/scripts/srt_to_transcript.py <input.srt> [output.txt]`
     - 去时间戳、序号、HTML标签、连续重复行
     - 输出干净的可阅读transcript → 存入 `sources/transcripts/`
