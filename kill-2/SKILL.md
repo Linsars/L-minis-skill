@@ -236,7 +236,8 @@ plutil -p payload/Payload/*.app/Info.plist
 # 深度静态分析工作流: ios-reverse-engineering/workflows/ios-recon-gha.yml
 
 # 3. device-only: Frida runtime 枚举 + 保护绕过
-frida -U -n target -l scripts/enum-classes.js
+frida -U -n target -l <(echo 'ObjC.enumerateLoadedClasses({onMatch:(n,h)=>console.log(n)},()=>{})')
+# 模板脚本: kill-2/scripts/frida-arm64-patch-template.js
 # ObjC: ObjC.enumerateLoadedClasses()
 # Swift: ModuleName.ClassName 注意 Swift 4+ mangling
 lldb / debugserver / TrollStore / Surge 仅在真机侧执行
