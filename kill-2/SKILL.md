@@ -247,6 +247,10 @@ lldb / debugserver / TrollStore / Surge 仅在真机侧执行
 # 4. 参考知识库
 # 读取 kill-2/references/ios-deep-dive.py
 # 旧系统兼容手术（flags=0x10/libswiftSpatial）: kill-2/references/ios-backcompat.md
+# 4. local: dylib 深度侦察（macholib+capstone，pip 已装）
+python3 "$SKILLS_ROOT/kill-2/scripts/dylib_recon.py" target.dylib --disasm 40   # 头/LC/依赖/sections/符号/反汇编
+python3 "$SKILLS_ROOT/kill-2/scripts/objc_meta_scan.py" target.dylib            # ObjC 类/方法/ivar/协议（支持fat+相对方法表+chained fixup）
+python3 "$SKILLS_ROOT/kill-2/scripts/macho_patch.py" bin "/old/path" "@rpath/stub.dylib" --dry-run  # load command 手术
 ```
 
 **🔴 CHECKPOINT**：

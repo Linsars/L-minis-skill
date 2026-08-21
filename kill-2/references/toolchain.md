@@ -104,3 +104,18 @@
 | sage | 数学计算 (Crypto) | 10.5+ |
 | hashcat / John | 密码破解 | hashcat 6.2+ |
 | volatility3 | 内存取证 | 2.x |
+
+## local dylib 侦察三件套（2026-08 实战沉淀，RuntimeClassDump.dylib 验证）
+
+| 脚本 | 用途 | 依赖 |
+|------|------|------|
+| `scripts/dylib_recon.py` | 头/flags/load commands/依赖库/sections/符号表/capstone 反汇编 | macholib + capstone |
+| `scripts/objc_meta_scan.py` | ObjC 类→方法/ivar/协议/属性全量 dump，无需 class-dump | macholib |
+| `scripts/macho_patch.py` | load command 路径替换 + 全链偏移修正（segments/chained fixups/trie/codesig） | 无 |
+
+**踩坑记录（读这段省两小时）**：
+1. fat 二进制：所有裸字节读取必须加 `h.offset` 切片基址；macholib 的 `h.MH_MAGIC` 在 fat 场景显示 CIGAM 值，端序要用磁盘魔数判
+2. `section_64.offset` 是 **uint32 不是 uint64**——`<QQQ` 读成 `<QQII` 差一个字段全盘皆输
+3. iOS 14+ 二进制类指针带 chained-fixup 编码（高位链标记）：`& 0x3FFFFFFFFFFF` 掩码还原
+4. 小方法列表（entsize|0x80000000）：12 字节条目 `{i32 sel;i32 typ;i32 imp}` 每字段相对自身地址；sel 是经 `__objc_selrefs` 槽的间接引用，槽内容才是 fixup 编码的字符串指针
+5. struct 格式串 `'<Q'*3` = `'<Q<Q<Q'` 非法——前缀只能出现一次
