@@ -723,3 +723,34 @@ $b = ";}system('id');/*";
 // In serialized form (with private property \0ClassName\0):
 O:8:"ClassName":2:{s:13:"\0ClassName\0func";s:15:"create_function";s:12:"\0ClassName\0arg";s:18:";}system('id');/*";}
 ```
+
+## DARWIN WRAPPER
+
+### Routing
+- 输入被 `readObject` / `unserialize` / `pickle` / YAML load 等反序列化 → 继续本 skill
+- 反序列化后进入 JNDI lookup → 联动 `jndi-injection`
+- 只是 JSON 解析，没有对象重建 → 不要强行套本 skill
+
+### Workflow
+1. 先做流量指纹：magic bytes、Base64 前缀、Content-Type、协议端口
+2. 先用无害链（URLDNS / sleep）证可达，再上 RCE 链
+3. 按目标依赖选 gadget：CommonsCollections / Spring / Groovy / Hibernate 等
+4. 有 WAF/黑名单时，考虑编码包装、二次序列化、Unicode 变体
+
+### CHECKPOINT
+- **🔴** 未确认反序列化点前，不直接打 ysoserial RCE 链
+- **🛑** URLDNS 无 DNS hit → 大概率不是 Java 原生反序列化，转其他指纹
+- **⚠️** Shiro/WebLogic 等有独立加密/协议层，必须按其流程走
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| 无已知 gadget 命中 | 换依赖版本对应链（CC1-7/Spring/Groovy 等） | 转 URLDNS 证可达性 |
+| payload 被 WAF 拦 | Base64/Unicode/编码包装或换协议入口 | 转 ghost-bits-cast 类绕过 |
+| Shiro key 不在默认表 | 尝试 padding oracle / 其他 CVE | 标记需进一步密钥泄露 |
+| Python pickle 无执行点 | 检查是否 restricted unpickler | 转变量覆盖/逻辑滥用 |
+
+### Anti-Patterns
+- 不在未确认反序列化前硬打 ysoserial 全家桶
+- 不忽略“找到 sink”与“找到可用 gadget 链”的区别
+- 不把 JSON 反序列化漏洞和原生对象反序列化混为一谈

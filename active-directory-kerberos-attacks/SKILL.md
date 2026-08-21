@@ -309,3 +309,34 @@ AD environment — targeting Kerberos
 └── Have .kirbi / .ccache ticket?
     └── Pass-the-Ticket → use directly (§6)
 ```
+
+## DARWIN WRAPPER
+
+### Routing
+- 目标是 Kerberos 协议层攻击（AS-REP/Kerberoasting/委派/票据伪造）→ 继续本 skill
+- 目标是 ACL 滥用 → 联动 `active-directory-acl-abuse`
+- 目标是 ADCS 证书链 → 联动 `active-directory-certificate-services`
+
+### Workflow
+1. 先枚举可攻击面：无预认证账号、SPN 列表、委派配置、krbtc 可达性
+2. 按凭据状态分流：只有用户名 / 有密码 hash / 有 krbtgt / 有委派写权限
+3. 每次拿到新票据立即验证可用性（`klist`、访问目标服务）
+4. 做隐蔽票据（Diamond/Sapphire）前，先确认检测基线
+
+### CHECKPOINT
+- **🔴** 未确认账号是否需要预认证前，不硬打 AS-REP roast
+- **🛑** 委派攻击前必须确认是 Unconstrained / Constrained / RBCD 哪一种
+- **⚠️** Golden Ticket 影响大，先确认这是授权测试范围
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| Kerberoast 无结果 | 扩大 SPN 枚举范围或换加密类型 | 转 AS-REP / 密码喷洒 |
+| 委派配置为空 | 转 ACL 路线找 RBCD 写权限 | 转 ADCS / 中继路线 |
+| 票据无法使用 | 检查时间偏移、域、服务 SPN 是否匹配 | 重新请求正确 SPN |
+| Golden Ticket 被检测 | 改 Diamond/Sapphire 或限时长票据 | 转 DCSync 后的合法凭据路径 |
+
+### Anti-Patterns
+- 不在未枚举委派配置前盲打委派攻击
+- 不忽略时钟偏差导致的票据失效
+- 不把 ACL/ADCS 问题硬塞进 Kerberos 路线

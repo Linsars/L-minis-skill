@@ -342,3 +342,34 @@ When Flask **debug mode** (Werkzeug debugger) is exposed but **PIN-protected**, 
 6. **Compute PIN** — use established open-source PIN calculators that implement the same algorithm from these values
 
 > Use only on systems you are authorized to test; obtaining these values implies prior access or an additional info-disclosure vector.
+
+## 16. DARWIN WRAPPER
+
+### Routing
+- 输入进入模板表达式 / 预览 / 渲染路径 → 继续本 skill
+- `${7*7}` 在 Java 栈生效但不是模板引擎 → 联动 `expression-language-injection`
+- 只有前端 JS 模板（Handlebars/Pug/EJS）→ 走客户端模板注入，不套服务端 RCE 链
+
+### Workflow
+1. 先跑 polyglot 探针判引擎，再选 payload
+2. 先证数学求值，再证对象访问，最后才上 RCE 链
+3. 有沙箱/黑名单时，先找 MRO / globals / attr 绕过，不硬打默认链
+4. 命中后记录：是否需要 debug 模式、是否有输出回显、是否可 OOB
+
+### CHECKPOINT
+- **🔴** 未区分 SSTI 与 EL 注入前，不直接套 Jinja2/Twig payload
+- **🛑** 数学探针无响应 → 转 blind SSTI（boolean/time/OOB）
+- **⚠️** Flask debug PIN 只在拿到主机信息后才有意义
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| `{{7*7}}` 无求值 | 切 `${}` `#{}` `@{}` `<#assign>` 等其他语法 | 转盲注 boolean/time/OOB |
+| Jinja2 默认链被拦 | 改 `request`/`lipsum`/`config` globals 或 hex 编码属性 | 转 MRO 子类遍历 |
+| Twig 返回 49 不是 7777777 | 确认是 Twig 而非 Jinja2，切 PHP 链 | 转对应引擎 payload 表 |
+| 沙箱黑名单拦关键类 | 找未列入黑名单的等价 gadget | 转 ENGINE_PAYLOADS.md 扩展表 |
+
+### Anti-Patterns
+- 不把 EL 注入当 SSTI 打
+- 不在未判引擎前贴全量 payload
+- 不忽略 blind SSTI 的 boolean/time/OOB 三条取证线

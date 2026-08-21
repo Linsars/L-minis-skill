@@ -376,4 +376,34 @@ Test XSS entry point
 5. **Step 5** — Blacklist check: does `<svg>` work? Does `<ScRiPt>` work?
 6. Note: **the same filter likely exists elsewhere** — if they filter `<script>` in search, do they filter it in file upload filename? In profile bio?
 
-**Key insight**: Filter presence = vulnerability exists, developer tried to patch. Chase that thread across the entire application.
+## 11. DARWIN WRAPPER
+
+### Routing
+- 反射点在 HTML/属性/JS/DOM sink → 继续本 skill
+- 需要真实案例链 / HttpOnly 绕过 / XS-Leaks → 再读 `xss-cross-site-scripting/SCENARIOS.md`
+- 需要 DOMPurify / Trusted Types / React/Vue/Angular 深水区 → 再读 `xss-cross-site-scripting/ADVANCED_XSS_TRICKS.md`
+- 如果用户只确认了“能不能注入”但没确认上下文 → 先跑本文件 `Injection Context Matrix`
+
+### Workflow
+1. 先判上下文：HTML / attr / JS / URL / block tag / DOM
+2. 先用最小 payload 试回显，不要一上来喷多态 payload
+3. 有过滤/WAF/CSP 时，再切高级 payload 或 companion 文件
+4. 命中后记录触发条件：是否需用户交互、是否持久、是否受 CSP 影响
+
+### CHECKPOINT
+- **🔴** 没确认上下文前，不进入 payload spraying
+- **🛑** 只在 DOM 里出现、源码里没有 → 先转 DOM sink 分析，不要继续反射型 payload
+- **⚠️** 发现 CSP / sanitizer / framework 特征 → 立即切对应 companion 文件
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| payload 原样反射不执行 | 重新判上下文，换同类最小 payload | 转 DOM sink / multi-reflection 路线 |
+| `<script>` 被拦但其他标签未拦 | 改 `svg/img/base/title/textarea` 等同上下文 payload | 切 companion 文件做过滤器绕过 |
+| 有回显但无执行 | 检查是否 HTML 编码、属性编码、JS 转义 | 转 URL / block tag / DOM 插入路径 |
+| CSP 阻断执行 | 查 allow-list / JSONP / AngularJS / base-uri 缺失 | 切 `ADVANCED_XSS_TRICKS.md` |
+
+### Anti-Patterns
+- 不在未判上下文前贴大杂烩 payload
+- 不把 DOM XSS 当反射 XSS 打
+- 不忽略“过滤存在”这个高价值信号

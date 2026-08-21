@@ -481,9 +481,34 @@ $pdo->query("SELECT * FROM " . $_GET['table']);
 $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
 ```
 
-### Entry Point Detection (Unicode tricks)
-```
-U+02BA ʺ (modifier letter double prime) → "
-U+02B9 ʹ (modifier letter prime) → '
-%%2727 → %27 → '
-```
+### DARWIN WRAPPER
+
+#### Routing
+- 参数进入 SQL 查询、排序、LIMIT、表名、JSON/数组算符 → 继续本 skill
+- 已知数据库类型不明 → 先跑本文件 `Fingerprint` / `DBMS-specific` 探针
+- 只有业务异常、没有明显报错 → 先盲注/时间注，不要硬打 UNION
+- 需要批量化利用/自动化枚举时，再切工具链（sqlmap 只是执行器，不是起点）
+
+#### Workflow
+1. 先确认注入位置：字符串 / 数字 / ORDER BY / LIMIT / 标识符 / 二阶
+2. 先做 DBMS 指纹，再选 payload；别一上来混 MySQL/Postgres/SQL Server 语法
+3. 先证明布尔差异或时间差异，再做数据枚举
+4. 发现二阶线索（注册、资料页、后台导入）时，回到完整业务流复现
+
+#### CHECKPOINT
+- **🔴** 未确认注入类别前，不直接用 UNION 全字段爆破
+- **🛑** 过滤单引号不等于没洞，优先试数字、括号、编码、二阶
+- **⚠️** 只有存储后触发 → 立即切二阶 SQLi 路线
+
+#### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| `'` 无报错无差异 | 改数字布尔、括号、排序、时间探针 | 转二阶 / JSON / Header 注入 |
+| UNION 列数对不上 | 用 ORDER BY / NULL,NULL 指纹 | 退回盲注验证可行性 |
+| WAF 拦典型关键字 | 切大小写、注释、编码、函数同义词 | 转延时/二阶/存储型 |
+| 只在保存后生效 | 按完整业务流复测 | 标记二阶，改从触发点取证 |
+
+#### Anti-Patterns
+- 不在 DBMS 未判明前混用方言 payload
+- 不把 sqlmap 当成第一步
+- 不忽略 header/cookie/JSON/二阶入口

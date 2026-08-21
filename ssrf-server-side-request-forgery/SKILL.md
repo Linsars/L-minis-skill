@@ -314,10 +314,33 @@ From zseano's methodology: **if developers filter only `169.254.169.254` directl
 - DNS names that resolve to internal IPs
 - Redirect chains (server follows 302 to internal IP)
 
-**Classic gap**: App filters `127.0.0.1` but not `127.1` or `[::1]` or `localhost`.
+## 10. DARWIN WRAPPER
 
-**Application-layer SSRF via XML** (when app parses XML):
-```xml
-<!DOCTYPE foo [<!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/">]>
-<request>&xxe;</request>
-```
+### Routing
+- 服务端会主动请求 URL / webhook / import / preview / fetch → 继续本 skill
+- 输入是 XML/SVG/Office 文档，且解析器可能联网 → SSRF 与 XXE 都要看，联动 `xxe-xml-external-entity`
+- 只有 DNS 外带证据 → 走 blind SSRF / OOB 路线，不纠缠回显
+
+### Workflow
+1. 先确认 fetch 能力：HTTP only / redirects / DNS only / internal only / cloud metadata
+2. 先做协议与地址归一化探针：`127.1`、`[::1]`、域名回源、302 跳转
+3. 证明能打到目标层后，再升级到 metadata / 内网 / 二跳协议
+4. 过滤器存在时，优先从解析差异与重定向链找洞，不先堆 payload
+
+### CHECKPOINT
+- **🔴** 未确认服务端真的发起请求前，不直接打 metadata
+- **🛑** 有 DNS hit 但无 HTTP hit → 转 blind SSRF 视角
+- **⚠️** 目标是 XML 解析器 → 同步检查 XXE 链
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| 直连内网 IP 被拦 | 改短写 IP / IPv6 / DNS 名 / 302 跳转 | 转 DNS-only / blind SSRF |
+| 只见 DNS 无 HTTP | 设计 OOB DNS 取证 | 标记 blind SSRF，仅证 reachability |
+| metadata 常量被拦 | 改完整路径、别名地址、重定向链 | 转应用层 SSRF / XXE 路线 |
+| 只允许 http/https | 找重定向、开放端口、二次请求链 | 转同协议内部服务枚举 |
+
+### Anti-Patterns
+- 不在未证 server-side fetch 前直接打内网 payload
+- 不把 DNS-only 结果当“没洞”
+- 不忘记 redirect / DNS / 解析归一化差异

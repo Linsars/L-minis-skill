@@ -328,3 +328,34 @@ Network access obtained — want to escalate via network attacks
 └── IDS/IPS in path?
     └── Apply evasion techniques (§9) — fragmentation, timing, encoding
 ```
+
+## DARWIN WRAPPER
+
+### Routing
+- 目标是二层/三层协议滥用（ARP/LLMNR/WPAD/DHCPv6/STP/VLAN）→ 继续本 skill
+- 已有内网立足点，需要隧道与横向 → 联动 `tunneling-and-pivoting`
+- 目标是 AD 认证滥用（relay 后的 ACL/Kerberos）→ 联动 `active-directory-*`
+
+### Workflow
+1. 先做被动监听，确认网络里有哪些协议在跑
+2. 再选投毒面：LLMNR/NBT-NS/WPAD/mDNS/DHCPv6
+3. 拿到认证后按 NTLM relay / hash crack 分流
+4. 每次投毒后检查是否触发 IDS/告警，必要时降频或换段
+
+### CHECKPOINT
+- **🔴** 未确认目标网段允许投毒前，不大范围广播
+- **🛑** SMB 签名强制开启时，NTLM relay 到 SMB 不可行，转 LDAP/HTTP/RPC
+- **⚠️** IPv6 未加固几乎是默认态，mitm6 是高价值首选
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| 无任何 hash 捕获 | 换协议（LLMNR→WPAD→DHCPv6）或换网段 | 转被动嗅探 + 长期等待 |
+| relay 全部被签 | 转 LDAP relay → RBCD | 转 Kerberos 中继类攻击 |
+| 触发 IDS 告警 | 降低频率、缩小广播范围、换工具指纹 | 转纯被动收集 |
+| 交换机防护完善 | 放弃 STP/VLAN 类攻击 | 转主机侧协议滥用 |
+
+### Anti-Patterns
+- 不在无授权网段大规模投毒
+- 不忽略 SMB 签名状态
+- 不把二层攻击和 AD 认证滥用割裂看

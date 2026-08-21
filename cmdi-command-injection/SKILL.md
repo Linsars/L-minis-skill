@@ -685,3 +685,34 @@ GIT_DIR=/tmp/evil_repo/.git git status
 NODE_OPTIONS="--require=/tmp/reverse_shell.js" node /app/server.js
 # reverse_shell.js is loaded before server.js
 ```
+
+## DARWIN WRAPPER
+
+### Routing
+- 输入进入 shell / exec / system / popen / 反引号 / 转换器 / 导入管线 → 继续本 skill
+- 命令执行点在反序列化 gadget 里 → 联动 `deserialization-insecure`
+- 只有文件上传，没有命令 sink → 不要强行套本 skill
+
+### Workflow
+1. 先判上下文：Linux/Windows、shell 类型、是否带引号、是否在参数中间
+2. 先用时间盲注或 OOB DNS 证可达性，再升级到回显/RCE
+3. 有过滤时按“分隔符 → 空格 → 关键字 → 编码”逐层绕过
+4. 命中后记录：是否需要特定环境变量、是否有输出通道、是否可持久化
+
+### CHECKPOINT
+- **🔴** 未确认命令真的被执行前，不直接上重 payload
+- **🛑** 无回显且无延时差异 → 转 OOB（DNS/HTTP）取证
+- **⚠️** Windows 与 Linux 的分隔符/转义完全不同，不混用
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| 分号被过滤 | 换 `&&` `\|\|` `\|` `%0a` `$()` 反引号 | 转编码/IFS/花括号展开 |
+| 空格被过滤 | 用 `$IFS` `{cat,/etc/passwd}` `<` 重定向 | 转编码或环境变量拼接 |
+| 关键字被拦 | 大小写、引号拆分、变量拼接、base64 | 转非常用命令等价实现 |
+| 无任何响应差异 | 时间盲注 + OOB DNS 双线验证 | 标记 blind，仅证可达性 |
+
+### Anti-Patterns
+- 不在未确认执行前贴反弹 shell
+- 不忽略 Windows/Linux 差异
+- 不把“无回显”当“无漏洞”

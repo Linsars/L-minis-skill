@@ -301,3 +301,34 @@ Targeting AD CS
 └── Already CA admin?
     └── Golden certificate for persistence (§11)
 ```
+
+## DARWIN WRAPPER
+
+### Routing
+- 目标是 ADCS / 证书模板 / CA 服务 → 继续本 skill
+- 目标是 ACL 滥用 → 联动 `active-directory-acl-abuse`
+- 目标是 Kerberos 协议攻击（AS-REP/Kerberoasting/委派）→ 联动 `active-directory-kerberos-attacks`
+
+### Workflow
+1. 先枚举 CA、模板、模板 ACL、CA 配置（`certipy find` 等）
+2. 按 ESC1–ESC13 逐项比对当前环境可利用条件
+3. 选最短路径申请证书，再转 Kerberos / NTLM 认证
+4. 拿到证书后立即验证认证链，不只停在“能申请”
+
+### CHECKPOINT
+- **🔴** 未枚举模板前，不硬套 ESC 编号
+- **🛑** 模板要求 manager approval 时，先看是否有 ManageCertificates 权限
+- **⚠️** 证书映射强校验开启时，ESC9/ESC10 大概率失效
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| ESC1 条件不满足 | 找其他可写模板或 enrollment agent 组合 | 转 ESC6/ESC7/ESC8 |
+| 申请的证书无法认证 | 检查 EKU、映射方式、UPN/SAN 是否生效 | 转 Golden Certificate |
+| HTTP enrollment 关闭 | 检查 RPC 通道（ESC11）或找其他 CA | 转 Kerberos 委派路线 |
+| 强绑定策略开启 | 放弃 UPN 类攻击 | 转 ACL / Kerberos 路线 |
+
+### Anti-Patterns
+- 不把“有 ADCS”当“一定有洞”
+- 不忽略 EKU 与映射策略
+- 不在未验证认证链前就宣称拿到域权限

@@ -552,3 +552,34 @@ XSLT processors parse XML and can be chained with XXE:
 ### XXE → XSLT chain
 
 If the target accepts XML input with a stylesheet reference (`<?xml-stylesheet?>`), inject both an external entity and a malicious XSLT to escalate from file read to RCE.
+
+## DARWIN WRAPPER
+
+### Routing
+- 输入是 XML/SVG/OOXML/SOAP，或解析器可能解析外部实体 → 继续本 skill
+- XML 解析器同时会主动请求 URL → 联动 `ssrf-server-side-request-forgery`
+- 只是 JSON，没有 XML 解析路径 → 不要强行套本 skill
+
+### Workflow
+1. 先判上下文：直接回显 / blind / error-based / OOB
+2. 先证实体可解析（本地 file 或 callback），再升级到文件读取 / SSRF / RCE
+3. 有过滤时按“DOCTYPE → ENTITY → SYSTEM → 协议”逐层绕过
+4. 命中后记录：是否需要外部 DTD、是否允许 `file://`、是否可触发 XSLT
+
+### CHECKPOINT
+- **🔴** 未确认 XML 解析器存在前，不直接打 OOB DTD
+- **🛑** 无回显且无 callback → 转 error-based XXE
+- **⚠️** Office/SVG 上传链要先解包再改再打包，不能只改请求体
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| 直接实体无回显 | 切 OOB（外部 DTD + HTTP/DNS） | 转 error-based 泄露 |
+| `file://` 被禁 | 试 `php://` `expect://` `jar://` 等协议 | 转 SSRF/内部服务枚举 |
+| DOCTYPE 整体被拦 | 检查是否有参数实体/CDATA/编码绕过 | 标记解析器安全配置完善 |
+| Office 文档上传被拦 | 解包→注入→重打包，保持 zip 结构 | 转其他导入入口 |
+
+### Anti-Patterns
+- 不在未确认 XML 解析器前贴全量 payload
+- 不把 XXE 和 SSRF 完全割裂看
+- 不忽略非 XML 后缀（SVG/OOXML/RSS）里的 XML 解析路径

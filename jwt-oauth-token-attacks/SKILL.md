@@ -299,3 +299,34 @@ CDN logs
 □ Test account linking abuse: link OAuth to existing account with same email
 □ Check OAuth provider confusion: use Apple ID to link where Google expected
 ```
+
+## 14. DARWIN WRAPPER
+
+### Routing
+- 问题在 token trust、alg、kid、jku、claim、OAuth 绑定/交换/回调 → 继续本 skill
+- 问题在对象授权/资源越权 → 联动 `api-authorization-and-bola`
+- 只有 cookie/session，没有 JWT/OAuth → 不要强行套本 skill
+
+### Workflow
+1. 先判令牌类型：JWT / opaque bearer / OAuth code / device code / refresh token
+2. 再判信任边界：谁签发、谁验证、谁消费 claim
+3. 先测签名与密钥处理，再测 claim 滥用，最后测账户绑定/回调链
+4. OAuth 场景必须双账号验证 account binding，不能单账号自测
+
+### CHECKPOINT
+- **🔴** 没确认 token 类型前，不混打 JWT/OAuth payload
+- **🛑** 只验证了签名强度，不代表 claim 安全
+- **⚠️** OAuth 回调链涉及前端/后端/IdP 三方，逐跳记录 state、redirect_uri、issuer
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| alg=none / HS↔RS 无效 | 转 `kid` / `jku` / key confusion / JWKS 缓存 | 转 claim abuse / account binding |
+| claim 改动无效果 | 检查服务端是否只信 session / DB lookup | 转对象授权 / BOLA 路线 |
+| OAuth 单账号自测无结论 | 补双账号 + 第三方 IdP 账户 | 转回调链与绑定测试 |
+| refresh token 无法重放 | 检查 rotation / audience / device binding | 转 code/token exchange 入口 |
+
+### Anti-Patterns
+- 不把 JWT 问题和 BOLA 混成一个测试面
+- 不用单账号完成 OAuth 绑定测试
+- 不忽略 key discovery / JWKS / jku / kid 这些信任入口

@@ -293,3 +293,34 @@ Have domain user access — want to escalate via ACL
 └── Complex multi-hop chain?
     └── Load BLOODHOUND_PATHS.md for Cypher queries and chain analysis
 ```
+
+## DARWIN WRAPPER
+
+### Routing
+- 已有域账号，目标是 ACL/权限滥用 → 继续本 skill
+- 目标是证书模板/ADCS → 联动 `active-directory-certificate-services`
+- 目标是 Kerberos 协议层攻击（Kerberoasting 等）→ 联动 `active-directory-kerberos-attacks`
+
+### Workflow
+1. 先跑 BloodHound 收集路径图，再选最短 ACL 链
+2. 先证当前身份对目标对象的具体 ACL 权限（GenericAll/WriteDACL/AllExtendedRights 等）
+3. 按对象类型选攻击：用户 / 组 / 计算机 / 域 / GPO
+4. 每一步提权后重新收集路径图，ACL 变化会打开新链
+
+### CHECKPOINT
+- **🔴** 没有 BloodHound 数据前，不硬猜 ACL 链
+- **🛑** 只有 GenericWrite 不一定够，确认能否设置 `servicePrincipalName` / `keyCredential`
+- **⚠️** DCSync 权限一旦拿到，先做快照再继续横向，避免反复触发复制告警
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| WriteDACL 自授权失败 | 检查是否真的有该 ACL、是否被 Protected Group 影响 | 转 RBCD / Shadow Credentials |
+| AddMember 无效 | 确认组是否为受保护组、是否有嵌套限制 | 转 GPO / LAPS / 计算机对象路线 |
+| LAPS 密码读不到 | 确认是 LAPS v1 还是 Windows LAPS，属性名不同 | 转计算机对象 GenericWrite 攻击 |
+| BloodHound 图不完整 | 补充收集或手动查 LDAP ACL | 用 Cypher 手工查关键边 |
+
+### Anti-Patterns
+- 不在无 ACL 证据时盲打
+- 不忽略“拿到新权限后重跑 BloodHound”
+- 不把 ADCS/Kerberos 问题硬塞进 ACL 路线

@@ -341,3 +341,34 @@ Compromised host — need to reach internal network
     ├── Bind SOCKS on 0.0.0.0 (ssh -L 0.0.0.0:...)
     └── Share Ligolo-ng routes via common proxy
 ```
+
+## DARWIN WRAPPER
+
+### Routing
+- 已有内网立足点，需要隧道/代理/多层 pivot → 继续本 skill
+- 还没有立足点，目标是二层/三层协议滥用 → 联动 `network-protocol-attacks`
+- 目标是 AD 内横向与提权 → 联动 `active-directory-*`
+
+### Workflow
+1. 先画出当前可达网络图：本机网卡、路由表、ARP、已知网段
+2. 再选通道类型：SSH / 反向代理（Ligolo/Chisel）/ DNS/ICMP/HTTP 隧道
+3. 每加一层 pivot 都重新探测新网段，更新可达图
+4. 团队协作时统一出口代理，避免多套隧道互相打架
+
+### CHECKPOINT
+- **🔴** 未确认出站方向前，不选依赖特定端口的隧道
+- **🛑** 只允许 HTTP(S) 出站时，优先 Neo-reGeorg/Ligolo-ng over WS
+- **⚠️** 多层 pivot 时记录每一跳的协议、端口、凭据来源
+
+### Failure Modes
+| 触发条件 | 一线修复 | 仍失败 → 兜底 |
+|---|---|---|
+| SSH 出站被禁 | 切 HTTPS 伪装或 DNS/ICMP 隧道 | 转 web shell 类隧道 |
+| 工具无法落盘 | 用内存加载 / 现成系统工具（netsh/plink） | 转纯端口转发组合 |
+| 多层 pivot 断链 | 分层验证每跳连通性再叠加 | 回退到最近稳定层 |
+| 流量被 IDS 标记 | 改协议特征、加密、降频 | 换出口主机/协议 |
+
+### Anti-Patterns
+- 不在无出站确认前硬建隧道
+- 不忽略每层 pivot 的可观测性成本
+- 不把“能连上”当“稳定可用”，必须做长连接测试
