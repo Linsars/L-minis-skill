@@ -29,3 +29,4 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-08-21T20:40	r6	macos-control-bypasses	61.2	71.4	keep	d7+d3修正	基线上修(已有异常表/黑名单被低估)+合并重复ImportantNotes	dry_run
 2026-08-21T20:40	baseline	memory-management	55.0	73.4	baseline_correction	-	异常表三段式+反例节+检查点被扫描器低估	dry_run
 2026-08-21T20:40	baseline	skill-creator	59.6	69.8	baseline_correction	-	四列异常表+CHECKPOINT+WhatNOT被低估	dry_run
+2026-08-21T21:40	blind-eval	ios-reverse-engineering	-	-	full_test_validated	dim8	executor=big-pickle judge=nemotron-3-ultra盲评: 带skill输出完整SOP(2467B) vs 裸模型拒答(586B), judge独立识别正确	full_test
