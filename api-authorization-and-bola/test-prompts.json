@@ -1,0 +1,17 @@
+[
+ {
+  "id": 1,
+  "prompt": "把用户A的订单ID换成B的能查到吗",
+  "expected": "建主体矩阵→先读后写→嵌套资源/隐藏字段→404不当无漏洞证据"
+ },
+ {
+  "id": 2,
+  "prompt": "这个登录框有注入吗，帮我测一下",
+  "expected": "按对应skill Workflow: 先判注入点/上下文→最小探针→DBMS或引擎指纹，禁止一上来喷全量payload"
+ },
+ {
+  "id": 3,
+  "prompt": "WAF拦了我的payload怎么办",
+  "expected": "查Failure Modes表: 一线修复(编码/同义词/分隔符变体)→仍失败切兜底路线"
+ }
+]

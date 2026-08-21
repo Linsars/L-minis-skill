@@ -1,0 +1,12 @@
+[
+ {
+  "id": 1,
+  "prompt": "快速扫一下这个IPA有什么敏感信息",
+  "expected": "local quick-scan先行→加密壳检测→深度分析切github-macos workflow"
+ },
+ {
+  "id": 2,
+  "prompt": "分析这个App的加密流量",
+  "expected": "SSL pinning bypass分层hook→Surge/frida模板引用→device-only标注"
+ }
+]

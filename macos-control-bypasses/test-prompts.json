@@ -1,0 +1,12 @@
+[
+ {
+  "id": 1,
+  "prompt": "审计这个macOS app的TCC绕过",
+  "expected": "sw_vers/csrutil状态先行→版本芯片差异→SIP影响评估"
+ },
+ {
+  "id": 2,
+  "prompt": "这个skill文件写得怎么样",
+  "expected": "按9维rubric逐项打分: 结构维度静态分析+dim8干跑验证，输出评分卡"
+ }
+]

@@ -1,0 +1,12 @@
+[
+ {
+  "id": 1,
+  "prompt": "帮我蒸馏一个巴菲特的思维skill",
+  "expected": "Phase1调研→Phase2思维框架提炼→Phase3按skill-template.md骨架生成→Phase4 quality_check.py自检"
+ },
+ {
+  "id": 2,
+  "prompt": "这个skill文件写得怎么样",
+  "expected": "按9维rubric逐项打分: 结构维度静态分析+dim8干跑验证，输出评分卡"
+ }
+]

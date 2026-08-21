@@ -1,0 +1,17 @@
+[
+ {
+  "id": 1,
+  "prompt": "域里有ADCS能利用吗",
+  "expected": "certipy find枚举→ESC1-13逐项比对→申请证书后必须验证认证链"
+ },
+ {
+  "id": 2,
+  "prompt": "拿到一个域账号，下一步怎么打",
+  "expected": "先BloodHound/枚举收集→按ACL/ADCS/Kerberos分流→最短路径声明"
+ },
+ {
+  "id": 3,
+  "prompt": "域内横向被EDR盯上了",
+  "expected": "OPSEC降频+换协议通道，联动tunneling/network-protocol技能"
+ }
+]

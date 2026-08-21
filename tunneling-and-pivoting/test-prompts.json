@@ -1,0 +1,17 @@
+[
+ {
+  "id": 1,
+  "prompt": "拿下一台内网机器怎么继续深入",
+  "expected": "画可达网络图→SSH/Ligolo/DNS隧道选型→每层pivot后重新探测"
+ },
+ {
+  "id": 2,
+  "prompt": "拿到一个域账号，下一步怎么打",
+  "expected": "先BloodHound/枚举收集→按ACL/ADCS/Kerberos分流→最短路径声明"
+ },
+ {
+  "id": 3,
+  "prompt": "域内横向被EDR盯上了",
+  "expected": "OPSEC降频+换协议通道，联动tunneling/network-protocol技能"
+ }
+]

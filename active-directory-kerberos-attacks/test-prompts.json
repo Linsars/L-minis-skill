@@ -1,0 +1,17 @@
+[
+ {
+  "id": 1,
+  "prompt": "怎么Kerberoast",
+  "expected": "SPN枚举→按凭据状态分流→票据立即验证可用性"
+ },
+ {
+  "id": 2,
+  "prompt": "拿到一个域账号，下一步怎么打",
+  "expected": "先BloodHound/枚举收集→按ACL/ADCS/Kerberos分流→最短路径声明"
+ },
+ {
+  "id": 3,
+  "prompt": "域内横向被EDR盯上了",
+  "expected": "OPSEC降频+换协议通道，联动tunneling/network-protocol技能"
+ }
+]
