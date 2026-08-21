@@ -49,7 +49,7 @@ minis 内操作:
 1. 上传 IPA 到可公网访问的位置，或由 workflow 自己 curl 拉取
 2. 触发 GH Actions workflow:
    gh workflow run ios-recon-gha.yml -f ipa_url=<https-url> -f artifact_name=ios-recon
-3. 等待结果，下载 artifact 到 /var/minis/workspace/
+3. 等待结果，下载 artifact 到本地工作目录（Minis: `/var/minis/workspace/`，其他 runtime 自定）
 ```
 
 workflow 模板见 `workflows/ios-recon-gha.yml`

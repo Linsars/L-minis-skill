@@ -225,7 +225,8 @@ kill-2 的执行层按环境分三类，避免在 OpenMinis 本地误走跑不�
 
 # 1. local: 解包 + 基础侦察
 unzip app.ipa -d payload/
-python3 /var/minis/skills/ios-reverse-engineering/scripts/ios-quick-scan.py payload/
+python3 "$SKILLS_ROOT/ios-reverse-engineering/scripts/ios-quick-scan.py" payload/
+# $SKILLS_ROOT = 本仓库根（Minis 默认 /var/minis/skills；其他 runtime export 为 clone 目录）
 nm -u payload/Payload/*.app/* | grep -v '___stub'
 objdump -x payload/Payload/*.app/* | head -80
 
