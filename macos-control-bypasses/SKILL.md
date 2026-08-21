@@ -248,8 +248,4 @@ A binary is "restricted" (immune to DYLD injection) when any of:
 
 - **不要跳过审计直接跑 exploit** — 先探测环境再选方案
 - **不要假设每台 Mac 都一样** — 版本、芯片、SIP 直接影响技术选型
-
-## Important Notes
-
-- All techniques are for security testing, CTF challenges, and educational settings
 - Launch constraints (Ventura+) add a new layer of binary execution restrictions beyond code signing
