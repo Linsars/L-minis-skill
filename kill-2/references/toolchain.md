@@ -119,6 +119,8 @@
 3. iOS 14+ 二进制类指针带 chained-fixup 编码（高位链标记）：`& 0x3FFFFFFFFFFF` 掩码还原
 4. 小方法列表（entsize|0x80000000）：12 字节条目 `{i32 sel;i32 typ;i32 imp}` 每字段相对自身地址；sel 是经 `__objc_selrefs` 槽的间接引用，槽内容才是 fixup 编码的字符串指针
 5. struct 格式串 `'<Q'*3` = `'<Q<Q<Q'` 非法——前缀只能出现一次
+6. **MH_EXECUTE 的 chained fixups 是 PTR_64_OFFSET 格式**（verified 2026-08-22 classdumpc）：target=镜像相对偏移而非 VM 地址，dylib（段基址 0）掩码碰巧能用，executable（段基址 0x100000000）必须走 `BASE+rel` 回退映射，否则 v2f 全 miss 静默输出空
+7. **bind 条目 bit63=1**：super/类引用指向外部导入符号时低 24 位是 import ordinal。标准工具链可经 LC_DYLD_CHAINED_FIXUPS 导入表解出符号名；非标准工具链（混淆产物）序号排列未知，诚实降级显示 `(extern)` 别输出垃圾名
 
 **objc_meta_scan 完全体（class-dump 等价）**：`python3 scripts/objc_meta_scan.py <bin> -o out.h`
 输出可编译风格头文件（@interface/@protocol/category/@property），支持 fat/chained-fixup/相对方法表/selref 间接/元类类方法。

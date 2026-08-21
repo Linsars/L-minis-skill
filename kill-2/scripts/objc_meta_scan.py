@@ -25,7 +25,7 @@ class Bin:
         for lc in h.commands:
             cmd, cd = lc[0], lc[1]
             if cmd.cmd == LC_SEGMENT_64 and cd.filesize > 0:
-                self.segs.append((cd.vmaddr, cd.vmsize, self.BASE + cd.fileoff))
+                self.segs.append((cd.vmaddr, cd.vmsize, self.BASE + cd.fileoff, cd.filesize))
         self.sections = {}
         off = self.BASE + 32
         for lc in h.commands:
@@ -45,8 +45,15 @@ class Bin:
     def v2f(self, vm):
         if not vm: return None
         vm &= MASK
-        for va, vs, fo in self.segs:
+        for va, vs, fo, fs in self.segs:
             if va <= vm < va + vs: return fo + (vm - va)
+        # DYLD_CHAINED_PTR_64_OFFSET (MH_EXECUTE 常见): target 为镜像相对偏移
+        # <!-- verified 2026-08-22 classdumpc 实弹: classlist 槽位 target=0x653c8 → BASE+0x653c8 -->
+        rel = vm
+        for va, vs, fo, fs in self.segs:
+            fbase = fo - self.BASE  # 该段在镜像内的文件偏移
+            if fs and fbase <= rel < fbase + fs:
+                return self.BASE + rel
         return None
 
     def rd(self, vm, n):
@@ -111,6 +118,33 @@ def deref_ptr(b, slot_vm):
     tgt = struct.unpack(b.E+'Q', b.raw[fo:fo+8])[0] & MASK
     return tgt if b.v2f(tgt) is not None else None
 
+LC_DYLD_CHAINED_FIXUPS = 0x80000034
+def chained_imports(b):
+    """chained-fixups 导入表 → {ordinal: 符号名}，用于解 bind 指针（如外部 super）"""
+    if hasattr(b, '_imports'): return b._imports
+    b._imports = {}
+    for lc in b.h.commands:
+        cmd, cd = lc[0], lc[1]
+        if getattr(cmd, 'cmd', None) == LC_DYLD_CHAINED_FIXUPS:
+            p = b.BASE + cd.dataoff
+            _v, _so, io, _ymo, cnt, fmt, _sf = struct.unpack(b.E+'7I', b.raw[p:p+28])
+            esize = {1:8, 2:12, 3:16}.get(fmt)
+            if not esize: return b._imports
+            stroff = 0
+            for lc2 in b.h.commands:
+                c2, d2 = lc2[0], lc2[1]
+                if getattr(c2, 'cmd', None) == LC_SYMTAB:
+                    stroff = d2.stroff; break
+            for i in range(min(cnt, 4096)):
+                q = p + io + i*esize
+                lo = struct.unpack(b.E+'I', b.raw[q:q+4])[0]
+                so = struct.unpack(b.E+'I', b.raw[q+4:q+8])[0]
+                lib, weak = lo & 0xFFFF, (lo >> 16) & 1
+                nm = b.fcstr(stroff + b.BASE + so)
+                if nm: b._imports[i] = (lib, nm.lstrip('_'))
+            break
+    return b._imports
+
 def read_props(b, list_vm):
     lm = list_vm & MASK
     if lm == 0: return []
@@ -143,13 +177,21 @@ def parse_class(b, cls_vm, kind='class'):
     d = {'kind':kind, 'name':name, 'super':None, 'ivars':[], 'inst':[], 'cls':[],
          'props':[], 'cprops':[], 'protos':[]}
     if supervm:
-        sfo = b.v2f(supervm)
-        if sfo:
-            sro = b.fu('Q', sfo+32)[0] & ~7 & MASK
-            srfo = b.v2f(sro)
-            d['super'] = b.fcstr(b.fu('Q', srfo+24)[0]) if srfo else hex(supervm & MASK)[2:]
+        if supervm >> 63:  # bind 条目: super 为外部导入符号
+            # <!-- verified 2026-08-22 classdumpc: super_raw=0x8010000000000061 → NSObject -->
+            imp = chained_imports(b)
+            ordn = supervm & 0xFFFFFF
+            nm = imp.get(ordn, (None, None))[1]
+            # 非标准工具链的导入表序号无法映射时诚实降级，不输出垃圾名
+            d['super'] = nm or '(extern)'
         else:
-            d['super'] = None
+            sfo = b.v2f(supervm)
+            if sfo:
+                sro = b.fu('Q', sfo+32)[0] & ~7 & MASK
+                srfo = b.v2f(sro)
+                d['super'] = b.fcstr(b.BASE + (b.fu('Q', srfo+24)[0] & MASK)) if srfo else hex(supervm)[2:]
+            else:
+                d['super'] = None
     if meth_vm: d['inst'] = read_methods(b, meth_vm)
     # 类方法在元类（isa 指向的类结构）里
     mfo = b.v2f(isa)
