@@ -246,6 +246,7 @@ lldb / debugserver / TrollStore / Surge 仅在真机侧执行
 
 # 4. 参考知识库
 # 读取 kill-2/references/ios-deep-dive.py
+# 旧系统兼容手术（flags=0x10/libswiftSpatial）: kill-2/references/ios-backcompat.md
 ```
 
 **🔴 CHECKPOINT**：
