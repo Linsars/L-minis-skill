@@ -22,3 +22,10 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-08-21T20:15	baseline	network-protocol-attacks	-	73.8	baseline	-	统一wrapper结构,payload深度达标,d6无资源引用	dry_run
 2026-08-21T20:15	baseline	tunneling-and-pivoting	-	73.8	baseline	-	统一wrapper结构,payload深度达标,d6无资源引用	dry_run
 2026-08-21T20:15	baseline	android-pentesting-tricks	-	73.8	baseline	-	统一wrapper结构,payload深度达标,d6无资源引用	dry_run
+2026-08-21T20:40	r6	ios-reverse-engineering	50.8	64.6	keep	d3/d4/d9	失败模式表+检查点+黑名单+章节编号	dry_run
+2026-08-21T20:40	r6	huashu-nuwa	56.3	59.1	keep	d6	补齐4个已承诺缺失文件+内联yt-dlp，脚本smoke测试通过	dry_run
+2026-08-21T20:40	r6	kill-2	83.3	84.5	keep	d6	enum-classes.js死引用→内联frida命令	dry_run
+2026-08-21T20:40	r6	nopua	59.1	62.1	keep	d9	反模式黑名单5条	dry_run
+2026-08-21T20:40	r6	macos-control-bypasses	61.2	71.4	keep	d7+d3修正	基线上修(已有异常表/黑名单被低估)+合并重复ImportantNotes	dry_run
+2026-08-21T20:40	baseline	memory-management	55.0	73.4	baseline_correction	-	异常表三段式+反例节+检查点被扫描器低估	dry_run
+2026-08-21T20:40	baseline	skill-creator	59.6	69.8	baseline_correction	-	四列异常表+CHECKPOINT+WhatNOT被低估	dry_run
