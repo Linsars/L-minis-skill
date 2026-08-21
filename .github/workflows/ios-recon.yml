@@ -1,0 +1,65 @@
+name: iOS Reverse Engineering macOS CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: 'Direct HTTPS URL to IPA or zipped app bundle'
+        required: true
+      artifact_name:
+        description: 'Artifact prefix'
+        required: false
+        default: ios-recon
+
+jobs:
+  analyze:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup workspace
+        run: |
+          mkdir -p work out headers
+          curl -L "$IPA_URL" -o work/input.bin
+          file work/input.bin || true
+        env:
+          IPA_URL: ${{ inputs.ipa_url }}
+
+      - name: Expand IPA or app bundle
+        run: |
+          cd work
+          if /usr/bin/file input.bin | grep -qi 'Zip archive'; then
+            unzip -q input.bin -d unpacked
+          else
+            echo 'Input is not a zip/ipa archive' >&2
+            exit 1
+          fi
+          find unpacked -maxdepth 4 -type f | head -50
+
+      - name: Locate Mach-O target
+        run: |
+          APP_BIN=$(find work/unpacked -path '*/Payload/*.app/*' -type f | head -1)
+          test -n "$APP_BIN"
+          echo "APP_BIN=$APP_BIN" >> $GITHUB_ENV
+          /usr/bin/file "$APP_BIN"
+
+      - name: Static triage
+        run: |
+          otool -L "$APP_BIN" > out/otool-L.txt || true
+          otool -l "$APP_BIN" > out/otool-l.txt || true
+          nm -u "$APP_BIN" > out/nm-u.txt || true
+          objdump -x "$APP_BIN" > out/objdump-x.txt || true
+          strings "$APP_BIN" | grep -iE 'jail|debug|ptrace|sysctl|frida|cydia|substrate|trollstore' > out/interesting-strings.txt || true
+          plutil -p "$(dirname "$APP_BIN")/Info.plist" > out/Info.plist.json || true
+
+      - name: Optional Java/Ghidra placeholder
+        run: |
+          java -version || true
+          echo 'Use this step to run Ghidra headless analysis if repo includes ghidra project/scripts.' > out/ghidra-note.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: out/
