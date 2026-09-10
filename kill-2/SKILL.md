@@ -247,6 +247,7 @@ lldb / debugserver / TrollStore / Surge 仅在真机侧执行
 # 4. 参考知识库
 # 读取 kill-2/references/ios-deep-dive.py
 # 旧系统兼容手术（flags=0x10/libswiftSpatial）: kill-2/references/ios-backcompat.md
+# 报告输出格式（四色行级 review/五段式上下文摘要/压缩基线）: kill-2/references/report-format.md
 # 4. local: dylib 深度侦察（macholib+capstone，pip 已装）
 python3 "$SKILLS_ROOT/kill-2/scripts/dylib_recon.py" target.dylib --disasm 40   # 头/LC/依赖/sections/符号/反汇编
 python3 "$SKILLS_ROOT/kill-2/scripts/objc_meta_scan.py" target.dylib            # ObjC 类/方法/ivar/协议（支持fat+相对方法表+chained fixup）

@@ -62,7 +62,8 @@ class Bin:
 
     def u(self, fmt, vm):
         b = self.rd(vm, struct.calcsize(fmt))
-        return struct.unpack(self.E+fmt, b) if b else None
+        # <!-- verified 2026-08-26 NSLogViewer.dylib: 短 slice 非 truthy 判断不够,必须精确等长 -->
+        return struct.unpack(self.E+fmt, b) if b is not None and len(b) == struct.calcsize(fmt) else None
 
     def q(self, vm):
         r = self.u('Q', vm)
@@ -150,8 +151,21 @@ def read_props(b, list_vm):
     if lm == 0: return []
     hdr = b.u('II', lm)
     if hdr is None: return []
-    _, count = hdr
+    entsize, count = hdr
     out = []
+    # <!-- verified 2026-08-26 NSLogViewer.dylib: small/relative prop list (entsize=8, flag bit31)
+    #      每项 {int32 name_off, int32 attr_off} 自相对; 老格式 entsize=16 双指针 -->
+    base_fo = b.v2f(lm)
+    if (entsize & 0x80000000) or entsize == 8:
+        if base_fo is None: return []
+        q = base_fo + 8
+        for _ in range(count):
+            if q + 8 > len(b.raw): break
+            noff, toff = struct.unpack(b.E+'ii', b.raw[q:q+8])
+            nm = b.fcstr(q + noff) or '?'
+            at = b.fcstr(q + toff) or ''
+            out.append((nm, at)); q += 8
+        return out
     p = lm + 8
     for _ in range(count):
         r = b.u('2Q', p)
@@ -172,7 +186,10 @@ def parse_class(b, cls_vm, kind='class'):
     isa, supervm, _, _vt, ro_vm = b.fu('5Q', cfo)
     rfo = b.v2f(ro_vm & ~7)
     if rfo is None: return None
-    name_vm, meth_vm, prot_vm, ivar_vm, prop_vm = b.fu('5Q', rfo+24)
+    # <!-- verified 2026-08-26 NSLogViewer.dylib: class_ro_t 布局 name(+24) meth(+32) prot(+40)
+    #      ivar(+48) weakIvarLayout(+56!) baseProperties(+64)——旧版把 +56 当 props,遇非零
+    #      weakLayout 的类(含 weak ivar)会喷垃圾属性;RuntimeClassDump 恰好全零没暴露 -->
+    name_vm, meth_vm, prot_vm, ivar_vm, _weak_layout, prop_vm = b.fu('6Q', rfo+24)
     name = b.cstr(name_vm) or '?'
     d = {'kind':kind, 'name':name, 'super':None, 'ivars':[], 'inst':[], 'cls':[],
          'props':[], 'cprops':[], 'protos':[]}

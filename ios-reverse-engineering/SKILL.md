@@ -1,7 +1,7 @@
 ---
 name: ios-reverse-engineering
-version: 1.0.0
-description: iOS 逆向工程执行工具链。适用于 IPA 拆包解析、class-dump 头部分析、API 端点发现、SDK 指纹识别、保护机制检测、密钥扫描、Ghidra 深度反编译。本地 Python 做初步分析，深度分析通过 GitHub Actions macOS runner 执行。触发词：「iOS 逆向」「IPA 分析」「class-dump」「Mach-O」「iOS 反编译」「脱壳」「App 分析」「frida」「iOS hook」「iOS 安全审计」「越狱检测」。
+version: 1.1.0
+description: iOS 逆向工程执行工具链。适用于 IPA 拆包解析、class-dump 头部分析、API 端点发现、SDK 指纹识别、保护机制检测、密钥扫描、Ghidra 深度反编译、代码签名页哈希校验与 CoreTrust 签名修复。本地 Python 做初步分析，深度分析通过 GitHub Actions macOS runner 执行。触发词：「iOS 逆向」「IPA 分析」「class-dump」「Mach-O」「iOS 反编译」「脱壳」「App 分析」「frida」「iOS hook」「iOS 安全审计」「越狱检测」「签名修复」「Invalid Page」「TrollStore 签名」。
 ---
 
 # SKILL: iOS Reverse Engineering — 执行工具链
@@ -40,9 +40,18 @@ IPA 获取
 
 输出：`<appname>-quick-report.json`
 
-## 三、GitHub Actions 深度分析
+## 二点五、代码签名校验与 CoreTrust 修复（2026-09-03 实战验证）
 
-当需要 class-dump / otool / Ghidra 分析时，切 `github-macos`：
+适用症状：TrollStore 系 app（或修改版 IPA）无越狱启动即 `SIGKILL-CODESIGNING / Invalid Page (0x32)`，崩溃点固定 `dyld4::JustInTimeLoader::applyFixups` 碰 `__LINKEDIT` 首页。全流程 iSH 本地可跑，不依赖 macOS。
+
+**详见 `references/codesign-repair.md`**（症状识别 → 定性 → 修复 → 验证 → 落盘），工具在 `scripts/codesign-repair/`：
+- `codesign_check.py` — Mach-O 内嵌签名解析 + 逐页哈希校验（识别 CoreTrust 双 CD：slot 0 合成模板跳过、slot 0x1000 是真 SHA-256 CD）
+- `repair_coretrust.py` — 定点修复：只更新坏页哈希 + 重签 CMS，零代码字节变动，文件长度不变
+- `cms_resign.c` — OpenSSL 复刻 fastPathSign `update_signature_blob`（`cc cms_resign.c -o /tmp/cms_resign $(pkg-config --cflags --libs openssl)` 即可编）
+- `final_validate.py` — 交付前三重验证（页哈希 + cdhash 入 CMS + openssl cms verify）
+
+核心铁律：**内核页哈希只算到 codeLimit 截尾**；CMS 用 `-binary -content <primary.cd> -noverify` 验证；修复件交付前必须全量验证，页哈希校验不过不许出门。
+
 
 ```
 minis 内操作:
