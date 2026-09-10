@@ -14,7 +14,17 @@ version: 1.0.0
 - `wrangler.toml` 的 `kv_namespaces` **禁止写 `id` 字段**（含 `id = ""`），否则按钮报错
 - `[triggers]` 段不影响按钮解析
 
-### 部署方式：完整 vs 增量
+## 公开仓库 OPSEC 纪律（kill-2 联动）
+
+- **公开仓库 commit message 一律中性**（`chore: update` / `v2.56.15` 级别），真实工程细节落 memory 日志，
+  详细规范见 `kill-2/references/report-format.md §4`。本 skill 涉及的 CI/CD/部署操作常跑在
+  为 Actions 免费额度而公开的仓库里——message 暴露的部署架构/凭据名/内网域名同样是情报。
+- 分支名同样中性：用 `suite`/`main`，不用 `exploit-dev`/`sample-analysis` 这类自曝命名
+  （MinisFix 实锤教训：曾被迫消耗数轮把 main 分支历史清干净换成 suite）。
+
+
+## 部署方式：完整 vs 增量
+
 - **完整部署**（deploy.sh）：建 Worker + KV + Secret，首次用 CF API multipart
 - **增量更新**：`curl -X PUT -F metadata= -F "worker.js=@"` 仅替换脚本，不动绑定/secrets
 - 增量 PUT 的 metadata **必须含 `bindings` 数组**，否则 KV 绑定被清空（踩过）
